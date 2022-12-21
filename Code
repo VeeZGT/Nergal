@@ -1,0 +1,176 @@
+#include <iostream>
+#include <sstream>
+
+#include <string>
+#include <vector>
+#include <array>
+
+#include <numeric>
+
+// -----------------------------------------------------------------------
+
+struct Student
+{
+    std::string fname;
+    std::string sname;
+
+public:
+    Student(const std::string& f, const std::string s)
+        : fname{ f }, sname{ s } {}
+
+public:
+    const std::string toStr() const {
+        std::ostringstream sout;
+        sout << "student: { "
+            << "fname: " << fname << ", "
+            << "sname: " << sname << ", "
+            << "}";
+        return sout.str();
+    }
+};
+
+struct ExamResults
+{
+    std::array<int, 3> notes{ 0 };
+
+public:
+    ExamResults(std::array<int, 3> l)
+        : notes(l) {}
+
+public:
+    double avg() const {
+        int sum = std::accumulate(notes.begin(), notes.end(), 0);
+        return
+            static_cast<double>(sum) /
+            static_cast<double>(notes.size());
+    }
+
+    const std::string toStr() const {
+        std::ostringstream sout;
+        sout << "eresult: { notes: { ";
+        for (size_t i = 0; i < notes.size(); ++i) {
+            sout << notes[i] << ", ";
+        }
+        sout << "}, avg: " << avg() << " }";
+        return sout.str();
+    }
+};
+
+// -----------------------------------------------------------------------
+
+struct ListNode
+{
+    Student student;
+    ExamResults eResults;
+
+    ListNode* next{ nullptr };
+
+public:
+    ListNode(Student s, ExamResults er)
+        : student{ s }, eResults{ er }
+        , next{ nullptr } {}
+
+    ~ListNode() {
+        if (next) {
+            auto d = next;
+            next = nullptr;
+            delete d;
+        }
+    }
+
+public:
+    const std::string toStr() const {
+        std::ostringstream sout;
+
+        sout << student.toStr() << ", ";
+        sout << eResults.toStr() << "; ";
+
+        return sout.str();
+    }
+};
+
+// Односвязный список
+struct List
+{
+    ListNode* beg{ nullptr };
+    ListNode* end{ nullptr };
+
+public:
+    ~List() {
+        if (beg && end) {
+            end = nullptr;
+
+            delete beg;
+            beg = nullptr;
+        }
+    }
+
+public:
+    void add(const Student& s, const ExamResults& er) {
+        if (!beg && !end) {
+            beg = new ListNode(s, er);
+            end = beg;
+            return;
+        }
+
+        auto tmp = new ListNode(s, er);
+        end->next = tmp;
+        end = tmp;
+    }
+
+    // Можно передать в качестве параметра условие.
+    void sort() {
+        bool isSwapped = true;
+        while (isSwapped) {
+            isSwapped = false;
+            auto stp = beg;
+
+            while (stp && stp->next) {
+                auto nxt = stp->next;
+                if (stp->eResults.avg() < nxt->eResults.avg()) {
+                    std::swap(stp->eResults, nxt->eResults);
+                    std::swap(stp->student, nxt->student);
+                    isSwapped = true;
+                }
+                stp = stp->next;
+            }
+        }
+    }
+
+    int size() const {
+        int sz{ 0 };
+        auto stp = beg;
+        while (stp) {
+            stp = stp->next;
+            ++sz;
+        }
+        return sz;
+    }
+
+    const std::string toStr() const {
+        std::ostringstream sout;
+        auto stp = beg;
+        while (stp) {
+            sout << stp->toStr() << std::endl;
+            stp = stp->next;
+        }
+        return sout.str();
+    }
+};
+
+// -----------------------------------------------------------------------
+
+int main()
+{
+    setlocale(LC_ALL, "Rus");
+    List l;
+    l.add({ "Иван", "Сидоров" }, { { 4, 2, 5 } });
+    l.add({ "Петр", "Иванов" }, { { 4, 4, 3 } });
+    l.add({ "Витя", "Гаврилов" }, { { 3, 2, 5 } });
+    l.add({ "Адам", "Константинов" }, { { 2, 3, 5 } });
+    l.add({ "Алексей", "Львов" }, { { 5, 5, 5 } });
+    std::cout << l.toStr() << std::endl;
+
+    l.sort();
+    std::cout << l.toStr() << std::endl;
+}
